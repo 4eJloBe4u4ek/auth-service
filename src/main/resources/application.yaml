@@ -1,12 +1,20 @@
 spring:
   application:
     name: Auth
+  datasource:
+    url: jdbc:postgresql://localhost:5433/auth
+    username: postgres
+    password: password
   liquibase:
     enabled: false
   jpa:
     hibernate:
       ddl-auto: validate
     open-in-view: false
+
+jwt:
+  secret: ${JWT_SECRET}
+  lifetime: 30m
 
 server:
   port: 8081
