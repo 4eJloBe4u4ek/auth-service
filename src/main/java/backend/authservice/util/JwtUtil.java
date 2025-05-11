@@ -22,7 +22,7 @@ public class JwtUtil {
     private Duration jwtLifetime;
 
 
-    public String generateToken(UserDetails userDetails) {
+    public String generateToken(Long userId, String username, UserDetails userDetails) {
         Date issuedAt = new Date();
         Date expiredAt = new Date(issuedAt.getTime() + jwtLifetime.toMillis());
 
@@ -31,16 +31,22 @@ public class JwtUtil {
                 .collect(Collectors.joining(","));
 
         return Jwts.builder()
-                .subject(userDetails.getUsername())
+                .subject(userId.toString())
                 .issuedAt(issuedAt)
                 .expiration(expiredAt)
+                .claim("username", username)
                 .claim("roles", roles)
                 .signWith(getSigningKey())
                 .compact();
     }
 
+    public Long extractUserId(String token) {
+        String sub = extractAllClaims(token).getSubject();
+        return Long.valueOf(sub);
+    }
+
     public String extractUsername(String token) {
-        return extractAllClaims(token).getSubject();
+        return extractAllClaims(token).get("username", String.class);
     }
 
     public List<String> extractRoles(String token) {

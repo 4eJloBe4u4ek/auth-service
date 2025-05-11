@@ -4,5 +4,6 @@ CREATE TABLE users
     username   TEXT NOT NULL UNIQUE,
     email      TEXT NOT NULL,
     password   TEXT NOT NULL,
-    role       TEXT NOT NULL
+    role       TEXT NOT NULL,
+    phone      TEXT
 );

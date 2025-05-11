@@ -1,8 +1,6 @@
 package backend.authservice.service;
 
-import backend.authservice.dto.AuthResponse;
-import backend.authservice.dto.Role;
-import backend.authservice.dto.UserResponse;
+import backend.authservice.dto.*;
 import backend.authservice.entity.UserEntity;
 import backend.authservice.exception.UserAlreadyExistsException;
 import backend.authservice.repository.UserJpaRepository;
@@ -10,8 +8,11 @@ import backend.authservice.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,27 +30,76 @@ public class AuthService {
 
     @Transactional
     public UserResponse register(String username, String password, String email, Role role) {
-        if (userJpaRepository.existsByUsername(username)) {
+        if (userJpaRepository.existsByEmail(email)) {
             throw new UserAlreadyExistsException("User already exists");
         }
 
-        UserEntity userEntity = new UserEntity();
-        userEntity.setUsername(username);
-        userEntity.setPassword(passwordEncoder.encode(password));
-        userEntity.setEmail(email);
-        userEntity.setRole(Objects.requireNonNullElse(role, Role.SUBSCRIBER));
-        userJpaRepository.save(userEntity);
+        UserEntity user = new UserEntity();
+        user.setUsername(username);
+        user.setPassword(passwordEncoder.encode(password));
+        user.setEmail(email);
+        user.setRole(Objects.requireNonNullElse(role, Role.UNASSIGNED));
+        userJpaRepository.save(user);
 
-        return new UserResponse(userEntity.getId(), userEntity.getUsername(), userEntity.getEmail(), userEntity.getRole());
+        return new UserResponse(user.getId(), user.getUsername(), user.getEmail(), user.getRole());
     }
 
-    public AuthResponse login(String username, String password) {
+    @Transactional
+    public AuthResponse login(String email, String password) {
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(username, password));
+                new UsernamePasswordAuthenticationToken(email, password)
+        );
 
-        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-        String token = jwtUtil.generateToken(userDetails);
+        UserEntity user = userJpaRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
 
-        return new AuthResponse(token);
+        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
+
+        String token = jwtUtil.generateToken(user.getId(), user.getUsername(), userDetails);
+        boolean roleMissing = user.getRole() == Role.UNASSIGNED;
+
+        return new AuthResponse(token, roleMissing);
+    }
+
+    public AuthResponse setRole(Role role, Authentication authentication) {
+        Long userId = Long.valueOf(authentication.getName());
+
+        UserEntity user = userJpaRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + userId));
+        user.setRole(role);
+        userJpaRepository.save(user);
+
+        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
+        String token = jwtUtil.generateToken(user.getId(), user.getUsername(), userDetails);
+
+        return new AuthResponse(token, false);
+    }
+
+    public UserInfoResponse getUserInfo(Authentication authentication) {
+        Long userId = Long.valueOf(authentication.getName());
+
+        UserEntity user = userJpaRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + userId));
+
+        return new UserInfoResponse(
+                user.getUsername(),
+                user.getEmail(),
+                user.getRole(),
+                user.getPhone()
+        );
+    }
+
+    @Transactional
+    public UserInfoResponse updateUserInfo(UserInfoRequest req, Authentication authentication) {
+        Long userId = Long.valueOf(authentication.getName());
+
+        UserEntity user = userJpaRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + userId));
+        user.setUsername(req.username());
+        user.setEmail(req.email());
+        user.setPhone(req.phone());
+        userJpaRepository.save(user);
+
+        return new UserInfoResponse(user.getUsername(), user.getEmail(), user.getRole(), user.getPhone());
     }
 }

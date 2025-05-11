@@ -1,6 +1,6 @@
 services:
   postgres:
-    container_name: postgres
+    container_name: auth-postgres
     image: postgres:latest
     environment:
       POSTGRES_DB: auth
@@ -12,7 +12,7 @@ services:
       - "5433:5432"
 
   liquibase-migrations:
-    container_name: migrations
+    container_name: auth-migrations
     image: liquibase/liquibase:4.29
     depends_on:
       - postgres
