@@ -11,6 +11,19 @@ import java.util.Arrays;
 
 @RestControllerAdvice
 public class AuthExceptionHandler {
+    @ExceptionHandler(InvalidTotpCodeException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidTotpCodeException(InvalidTotpCodeException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ApiErrorResponse(
+                        "Invalid TOTP code",
+                        String.valueOf(HttpStatus.UNAUTHORIZED),
+                        ex.getClass().getSimpleName(),
+                        ex.getMessage(),
+                        Arrays.stream(ex.getStackTrace())
+                                .map(StackTraceElement::toString)
+                                .toList()));
+    }
+
     @ExceptionHandler(UserAlreadyExistsException.class)
     public ResponseEntity<ApiErrorResponse> handleUserAlreadyExistsException(UserAlreadyExistsException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)

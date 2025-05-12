@@ -31,4 +31,7 @@ public class UserEntity {
 
     @Column(name = "phone")
     private String phone;
+
+    @Column(name = "totp_secret")
+    private String totpSecret;
 }

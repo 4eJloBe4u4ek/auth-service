@@ -38,6 +38,16 @@ public class AuthController {
             @RequestBody UserInfoRequest req,
             Authentication auth
     ) {
-        return ResponseEntity.ok(authService.updateUserInfo(req, auth));
+        return ResponseEntity.status(HttpStatus.OK).body(authService.updateUserInfo(req, auth));
+    }
+
+    @PostMapping("/auth/2fa/setup")
+    public ResponseEntity<Setup2FaResponse> setup2Fa(Authentication auth) {
+        return ResponseEntity.status(HttpStatus.OK).body(authService.setup2Fa(auth));
+    }
+
+    @PostMapping("/auth/2fa/verify")
+    public ResponseEntity<AuthResponse> verify2Fa(@RequestBody TwoFaRequest twoFaRequest, Authentication auth) {
+        return ResponseEntity.status(HttpStatus.OK).body(authService.verify2Fa(twoFaRequest.code(), auth));
     }
 }

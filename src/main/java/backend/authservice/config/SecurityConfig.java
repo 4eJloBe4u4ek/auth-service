@@ -1,14 +1,16 @@
 package backend.authservice.config;
 
-import backend.authservice.service.*;
+import backend.authservice.service.CustomOidcUserService;
+import backend.authservice.service.OAuth2SuccessHandler;
+import backend.authservice.service.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.*;
-import org.springframework.http.HttpMethod;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.*;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -49,7 +51,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth->auth
                         .requestMatchers("/login/oauth2/**","/oauth2/**").permitAll()
                         .requestMatchers("/auth/register", "/auth/login").permitAll()
-                        .requestMatchers("/auth/set-role").authenticated()
+                        .requestMatchers("/auth/set-role", "/auth/2fa/setup", "/auth/2fa/verify").authenticated()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth->oauth

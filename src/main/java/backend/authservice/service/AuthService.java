@@ -2,6 +2,7 @@ package backend.authservice.service;
 
 import backend.authservice.dto.*;
 import backend.authservice.entity.UserEntity;
+import backend.authservice.exception.InvalidTotpCodeException;
 import backend.authservice.exception.UserAlreadyExistsException;
 import backend.authservice.repository.UserJpaRepository;
 import backend.authservice.util.JwtUtil;
@@ -9,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -27,6 +27,7 @@ public class AuthService {
     private final UserDetailsService userDetailsService;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
+    private final GAService gaService;
 
     @Transactional
     public UserResponse register(String username, String password, String email, Role role) {
@@ -57,8 +58,9 @@ public class AuthService {
 
         String token = jwtUtil.generateToken(user.getId(), user.getUsername(), userDetails);
         boolean roleMissing = user.getRole() == Role.UNASSIGNED;
+        boolean hasSecret = user.getTotpSecret() != null;
 
-        return new AuthResponse(token, roleMissing);
+        return new AuthResponse(token, roleMissing, !hasSecret, hasSecret);
     }
 
     public AuthResponse setRole(Role role, Authentication authentication) {
@@ -71,8 +73,9 @@ public class AuthService {
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
         String token = jwtUtil.generateToken(user.getId(), user.getUsername(), userDetails);
+        boolean hasSecret = user.getTotpSecret() != null;
 
-        return new AuthResponse(token, false);
+        return new AuthResponse(token, false, !hasSecret, hasSecret);
     }
 
     public UserInfoResponse getUserInfo(Authentication authentication) {
@@ -101,5 +104,33 @@ public class AuthService {
         userJpaRepository.save(user);
 
         return new UserInfoResponse(user.getUsername(), user.getEmail(), user.getRole(), user.getPhone());
+    }
+
+    public Setup2FaResponse setup2Fa(Authentication authentication) {
+        Long userId = Long.valueOf(authentication.getName());
+        UserEntity user = userJpaRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + userId));
+
+        String secret = gaService.generateSecret();
+        user.setTotpSecret(secret);
+        userJpaRepository.save(user);
+
+        String uri = gaService.buildOtpAuthUrl(user.getEmail(), secret);
+        String qrCodeBase64 = gaService.generateQRBase64(uri);
+        return new Setup2FaResponse(uri, qrCodeBase64);
+    }
+
+    public AuthResponse verify2Fa(int code, Authentication authentication) {
+        Long userId = Long.valueOf(authentication.getName());
+        UserEntity user = userJpaRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + userId));
+
+        if (gaService.verifySecret(user.getTotpSecret(), code)) {
+            UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
+            String token = jwtUtil.generateToken(user.getId(), user.getUsername(), userDetails);
+            return new AuthResponse(token, false, true,false);
+        } else {
+            throw new InvalidTotpCodeException("Invalid TOTP code");
+        }
     }
 }
