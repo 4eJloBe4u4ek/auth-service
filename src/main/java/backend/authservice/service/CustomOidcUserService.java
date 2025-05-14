@@ -15,17 +15,16 @@ public class CustomOidcUserService extends OidcUserService {
     private final UserJpaRepository userRepo;
 
     @Override
-    public OidcUser loadUser(OidcUserRequest req) {
-        OidcUser oidc = super.loadUser(req);
+    public OidcUser loadUser(OidcUserRequest request) {
+        OidcUser oidc = super.loadUser(request);
         String email = oidc.getEmail();
         userRepo.findByEmail(email)
                 .orElseGet(() -> {
-                    var u = new UserEntity();
-                    u.setUsername(oidc.getFullName());
-                    u.setEmail(email);
-                    u.setPassword("");
-                    u.setRole(Role.UNASSIGNED);
-                    return userRepo.save(u);
+                    UserEntity user = new UserEntity();
+                    user.setUsername(oidc.getFullName());
+                    user.setEmail(email);
+                    user.setRole(Role.UNASSIGNED);
+                    return userRepo.save(user);
                 });
         return oidc;
     }

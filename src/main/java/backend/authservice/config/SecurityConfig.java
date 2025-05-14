@@ -51,6 +51,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth->auth
                         .requestMatchers("/login/oauth2/**","/oauth2/**").permitAll()
                         .requestMatchers("/auth/register", "/auth/login").permitAll()
+                        .requestMatchers("/auth/users/**").permitAll()
                         .requestMatchers("/auth/set-role", "/auth/2fa/setup", "/auth/2fa/verify").authenticated()
                         .anyRequest().authenticated()
                 )

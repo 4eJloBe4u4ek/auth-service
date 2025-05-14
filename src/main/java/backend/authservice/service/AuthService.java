@@ -85,6 +85,7 @@ public class AuthService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + userId));
 
         return new UserInfoResponse(
+                user.getId(),
                 user.getUsername(),
                 user.getEmail(),
                 user.getRole(),
@@ -98,12 +99,16 @@ public class AuthService {
 
         UserEntity user = userJpaRepository.findById(userId)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + userId));
+        if (userJpaRepository.existsByEmail(req.email()) && !user.getEmail().equals(req.email())) {
+            throw new UserAlreadyExistsException("User already exists");
+        }
+
         user.setUsername(req.username());
         user.setEmail(req.email());
         user.setPhone(req.phone());
         userJpaRepository.save(user);
 
-        return new UserInfoResponse(user.getUsername(), user.getEmail(), user.getRole(), user.getPhone());
+        return new UserInfoResponse(user.getId(), user.getUsername(), user.getEmail(), user.getRole(), user.getPhone());
     }
 
     public Setup2FaResponse setup2Fa(Authentication authentication) {
@@ -132,5 +137,11 @@ public class AuthService {
         } else {
             throw new InvalidTotpCodeException("Invalid TOTP code");
         }
+    }
+
+    public UserInfoResponse getUserInfoById(Long userId) {
+        UserEntity user = userJpaRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + userId));
+        return new UserInfoResponse(user.getId(), user.getUsername(), user.getEmail(), user.getRole(), user.getPhone());
     }
 }

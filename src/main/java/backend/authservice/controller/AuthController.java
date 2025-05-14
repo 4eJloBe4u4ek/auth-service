@@ -6,6 +6,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,7 +18,8 @@ public class AuthController {
 
     @PostMapping("/auth/register")
     public ResponseEntity<UserResponse> register(@RequestBody RegisterRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request.username(), request.password(), request.email(), request.role()));
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                authService.register(request.username(), request.password(), request.email(), request.role()));
     }
 
     @PostMapping("/auth/login")
@@ -34,11 +38,8 @@ public class AuthController {
     }
 
     @PutMapping("/auth/me")
-    public ResponseEntity<UserInfoResponse> updateProfile(
-            @RequestBody UserInfoRequest req,
-            Authentication auth
-    ) {
-        return ResponseEntity.status(HttpStatus.OK).body(authService.updateUserInfo(req, auth));
+    public ResponseEntity<UserInfoResponse> updateProfile(@RequestBody UserInfoRequest request, Authentication auth) {
+        return ResponseEntity.status(HttpStatus.OK).body(authService.updateUserInfo(request, auth));
     }
 
     @PostMapping("/auth/2fa/setup")
@@ -49,5 +50,9 @@ public class AuthController {
     @PostMapping("/auth/2fa/verify")
     public ResponseEntity<AuthResponse> verify2Fa(@RequestBody TwoFaRequest twoFaRequest, Authentication auth) {
         return ResponseEntity.status(HttpStatus.OK).body(authService.verify2Fa(twoFaRequest.code(), auth));
+    }
+    @GetMapping("/auth/users/{id}")
+    public ResponseEntity<UserInfoResponse> getUserById(@PathVariable Long id) {
+        return ResponseEntity.status(HttpStatus.OK).body(authService.getUserInfoById(id));
     }
 }

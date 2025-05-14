@@ -26,10 +26,10 @@ public class AuthExceptionHandler {
 
     @ExceptionHandler(UserAlreadyExistsException.class)
     public ResponseEntity<ApiErrorResponse> handleUserAlreadyExistsException(UserAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(new ApiErrorResponse(
-                        "Incorrect request",
-                        String.valueOf(HttpStatus.BAD_REQUEST),
+                        "Email already registered",
+                        String.valueOf(HttpStatus.CONFLICT),
                         ex.getClass().getSimpleName(),
                         ex.getMessage(),
                         Arrays.stream(ex.getStackTrace())

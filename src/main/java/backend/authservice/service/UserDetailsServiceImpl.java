@@ -19,9 +19,10 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         UserEntity user = userJpaRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
 
+        String password = user.getPassword() != null ? user.getPassword() : "{noop}";
         return User.builder()
                 .username(user.getEmail())
-                .password(user.getPassword())
+                .password(password)
                 .roles(user.getRole().name())
                 .build();
     }

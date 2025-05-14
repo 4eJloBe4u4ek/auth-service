@@ -8,5 +8,6 @@
         http://www.liquibase.org/xml/ns/dbchangelog-ext https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
 
     <include relativeToChangelogFile="true" file="sql/V0-initial-schema.sql"/>
+    <include relativeToChangelogFile="true" file="sql/V1-insert-users.sql"/>
 
 </databaseChangeLog>

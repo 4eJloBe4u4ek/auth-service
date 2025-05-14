@@ -1,5 +1,6 @@
 package backend.authservice.service;
 
+import backend.authservice.config.FrontendProperties;
 import backend.authservice.dto.Role;
 import backend.authservice.entity.UserEntity;
 import backend.authservice.repository.UserJpaRepository;
@@ -22,6 +23,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     private final JwtUtil jwtUtil;
     private final UserJpaRepository userRepo;
     private final UserDetailsService userDetailsService;
+    private final FrontendProperties frontendProperties;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest req,
@@ -34,10 +36,9 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         boolean roleMissing = user.getRole() == Role.UNASSIGNED;
         boolean hasSecret = user.getTotpSecret() != null;
 
-        String frontendBase = "http://localhost:3000";
         String redirectUrl = String.format(
                 "%s/auth?token=%s&roleMissing=%b&need2faSetup=%b&need2faVerify=%b",
-                frontendBase, token, roleMissing, !hasSecret, hasSecret
+                frontendProperties.baseUrl(), token, roleMissing, !hasSecret, hasSecret
         );
         res.sendRedirect(redirectUrl);
     }
