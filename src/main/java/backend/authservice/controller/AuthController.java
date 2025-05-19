@@ -51,6 +51,7 @@ public class AuthController {
     public ResponseEntity<AuthResponse> verify2Fa(@RequestBody TwoFaRequest twoFaRequest, Authentication auth) {
         return ResponseEntity.status(HttpStatus.OK).body(authService.verify2Fa(twoFaRequest.code(), auth));
     }
+
     @GetMapping("/auth/users/{id}")
     public ResponseEntity<UserInfoResponse> getUserById(@PathVariable Long id) {
         return ResponseEntity.status(HttpStatus.OK).body(authService.getUserInfoById(id));

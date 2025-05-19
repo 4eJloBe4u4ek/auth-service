@@ -3,6 +3,7 @@ package backend.authservice.config;
 import backend.authservice.service.CustomOidcUserService;
 import backend.authservice.service.OAuth2SuccessHandler;
 import backend.authservice.service.UserDetailsServiceImpl;
+import backend.authservice.util.AesGcmEncryptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +18,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import java.util.Base64;
+
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -25,6 +28,13 @@ public class SecurityConfig {
     private final OAuth2SuccessHandler successHandler;
     private final JwtRequestFilter jwtFilter;
     private final UserDetailsServiceImpl userDetailsService;
+    private final EncryptionProperties encryptionProperties;
+
+    @Bean
+    public AesGcmEncryptor aesGcmEncryptor() {
+        byte[] keyBytes = Base64.getDecoder().decode(encryptionProperties.key());
+        return new AesGcmEncryptor(keyBytes);
+    }
 
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {

@@ -5,6 +5,7 @@ import backend.authservice.entity.UserEntity;
 import backend.authservice.exception.InvalidTotpCodeException;
 import backend.authservice.exception.UserAlreadyExistsException;
 import backend.authservice.repository.UserJpaRepository;
+import backend.authservice.util.AesGcmEncryptor;
 import backend.authservice.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -28,6 +29,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
     private final GAService gaService;
+    private final AesGcmEncryptor aesGcmEncryptor;
 
     @Transactional
     public UserResponse register(String username, String password, String email, Role role) {
@@ -117,7 +119,8 @@ public class AuthService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + userId));
 
         String secret = gaService.generateSecret();
-        user.setTotpSecret(secret);
+        String encryptedCode = aesGcmEncryptor.encrypt(secret);
+        user.setTotpSecret(encryptedCode);
         userJpaRepository.save(user);
 
         String uri = gaService.buildOtpAuthUrl(user.getEmail(), secret);
@@ -130,7 +133,8 @@ public class AuthService {
         UserEntity user = userJpaRepository.findById(userId)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + userId));
 
-        if (gaService.verifySecret(user.getTotpSecret(), code)) {
+        String decryptedCode = aesGcmEncryptor.decrypt(user.getTotpSecret());
+        if (gaService.verifySecret(decryptedCode, code)) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
             String token = jwtUtil.generateToken(user.getId(), user.getUsername(), userDetails);
             return new AuthResponse(token, false, true,false);
